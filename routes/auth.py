@@ -6,7 +6,7 @@ from database import get_db
 from email_utils import send_email, email_template, generate_code, store_code
 from helpers import render, login_required
 
-auth_bp = Blueprint("auth", __name__)
+auth_bp = Blueprint("auth", __name__) 
 
 LOGO = '<img src="/static/images/wmsu_logo.png" alt="WMSU" style="width:100%;height:100%;object-fit:contain">'
 
@@ -87,7 +87,7 @@ document.querySelectorAll('.form-input').forEach(i=>i.addEventListener('keydown'
 
 @auth_bp.route("/register")
 def register_page():
-    return render(rf"""
+    return render(f"""
 <div class="auth-bg">
   <div class="auth-card" style="max-width:460px">
     <div class="auth-logo">
