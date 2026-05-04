@@ -6,7 +6,7 @@ from database import get_db
 from email_utils import send_email, email_template, generate_code, store_code
 from helpers import render, login_required
 
-auth_bp = Blueprint("auth", __name__) 
+auth_bp = Blueprint("auth", __name__)
 
 LOGO = '<img src="/static/images/wmsu_logo.png" alt="WMSU" style="width:100%;height:100%;object-fit:contain">'
 
@@ -87,6 +87,7 @@ document.querySelectorAll('.form-input').forEach(i=>i.addEventListener('keydown'
 
 @auth_bp.route("/register")
 def register_page():
+    EMAIL_REGEX = "^[^\\\\s@]+@[^\\\\s@]+\\\\.[^\\\\s@]+$"
     return render(f"""
 <div class="auth-bg">
   <div class="auth-card" style="max-width:460px">
@@ -124,29 +125,43 @@ def register_page():
       <label class="form-label">Confirm Password</label>
       <input type="password" id="confirm" class="form-input" placeholder="Repeat password">
     </div>
-    <button class="btn btn-primary w-full" onclick="doRegister()" style="justify-content:center">Create Account</button>
+    <button class="btn btn-primary w-full" id="registerBtn" onclick="doRegister()" style="justify-content:center">Create Account</button>
     <p class="text-center text-sm text-muted mt-16">Already have an account? <a href="/login" style="color:var(--red);font-weight:600">Sign In</a></p>
   </div>
 </div>
 <script>
 function doRegister(){{
-  const name    =document.getElementById('name').value.trim();
-  const email   =document.getElementById('email').value.trim();
-  const role    =document.getElementById('role').value;
-  const user_id =document.getElementById('user_id').value.trim();
-  const pass    =document.getElementById('password').value;
-  const conf    =document.getElementById('confirm').value;
+  const name    = document.getElementById('name').value.trim();
+  const email   = document.getElementById('email').value.trim();
+  const role    = document.getElementById('role').value;
+  const user_id = document.getElementById('user_id').value.trim();
+  const pass    = document.getElementById('password').value;
+  const conf    = document.getElementById('confirm').value;
+  const btn     = document.getElementById('registerBtn');
 
   if(!name||!email||!user_id||!pass||!conf){{showAlert('Please fill in all fields.');return;}}
   if(pass.length<6){{showAlert('Password must be at least 6 characters.');return;}}
   if(pass!==conf){{showAlert('Passwords do not match.');return;}}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){{showAlert('Invalid email format.');return;}}
+  if(!email.includes('@')||!email.includes('.')){{showAlert('Invalid email format.');return;}}
+
+  btn.disabled = true;
+  btn.textContent = 'Creating Account...';
 
   fetch('/api/register',{{method:'POST',headers:{{'Content-Type':'application/json'}},
     body:JSON.stringify({{name,email,role,user_id,password:pass}})}})
   .then(r=>r.json()).then(d=>{{
-    if(d.success){{showAlert('Verification email sent. Check your inbox.','success');setTimeout(()=>location.href=d.redirect||'/verify?email='+encodeURIComponent(email)+'&type=register',1500);}}
-    else showAlert(d.error||'Registration failed.');
+    if(d.success){{
+      showAlert('Verification email sent. Check your inbox.','success');
+      setTimeout(()=>location.href=d.redirect||'/verify?email='+encodeURIComponent(email)+'&type=register',1500);
+    }} else {{
+      showAlert(d.error||'Registration failed.');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }}
+  }}).catch(()=>{{
+    showAlert('Network error. Please try again.');
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
   }});
 }}
 </script>
@@ -203,7 +218,6 @@ def forgot_page():
     step    = request.args.get("step", "1")
     user_id = request.args.get("user_id", "")
 
-    # Guard: kung nag-direct access sa step 2 walay user_id, i-redirect sa step 1
     if step == "2" and not user_id:
         return redirect(url_for("auth.forgot_page"))
 
@@ -442,7 +456,6 @@ def api_forgot_password():
 
     db = get_db()
     try:
-        # I-check kung nag-match ang email AND user_id sa SAME account
         user = db.execute(
             "SELECT * FROM users WHERE user_id=? AND email=?",
             (identifier, email)
