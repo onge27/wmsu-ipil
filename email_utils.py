@@ -3,33 +3,30 @@ import string
 import smtplib
 from email.mime.text import MIMEText
 from datetime import datetime, timedelta
-
 from config import EMAIL_ENABLED, MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM_NAME
+
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
     """Send an HTML email via Gmail SMTP. Returns True on success."""
     if not EMAIL_ENABLED:
         print(f"[EMAIL DISABLED] Would have sent to {to_email}: {subject}")
         return False
-
     try:
         msg = MIMEText(body, "html")
         msg["Subject"] = subject
         msg["From"]    = f"{MAIL_FROM_NAME} <{MAIL_USERNAME}>"
         msg["To"]      = to_email
-
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
         server.login(MAIL_USERNAME, MAIL_PASSWORD)
         server.sendmail(MAIL_USERNAME, to_email, msg.as_string())
         server.quit()
-
         print("[EMAIL SENT SUCCESSFULLY]")
         return True
-
     except Exception as e:
         print("[EMAIL ERROR]", str(e))
         return False
+
 
 def email_template(title: str, code: str, message: str) -> str:
     """Return a branded HTML email body."""
@@ -53,9 +50,11 @@ def email_template(title: str, code: str, message: str) -> str:
       </div>
     </div>"""
 
+
 def generate_code() -> str:
     """Return a random 6-digit numeric code."""
     return "".join(random.choices(string.digits, k=6))
+
 
 def store_code(db, user_id, email: str, code: str, code_type: str,
                pending_name: str = None, pending_role: str = None,
@@ -67,7 +66,9 @@ def store_code(db, user_id, email: str, code: str, code_type: str,
         (email, code_type),
     )
     db.execute(
-        "INSERT INTO verification_codes (user_id, email, code, type, expires_at, pending_name, pending_role, pending_password, pending_user_id) VALUES (?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO verification_codes "
+        "(user_id, email, code, type, expires_at, pending_name, pending_role, pending_password, pending_user_id) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
         (user_id, email, code, code_type, expires, pending_name, pending_role, pending_password, pending_user_id),
     )
     db.commit()
