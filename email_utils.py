@@ -7,7 +7,6 @@ from config import EMAIL_ENABLED, MAIL_USERNAME, MAIL_PASSWORD, MAIL_FROM_NAME
 
 
 def send_email(to_email: str, subject: str, body: str) -> bool:
-    """Send an HTML email via Gmail SMTP. Returns True on success."""
     if not EMAIL_ENABLED:
         print(f"[EMAIL DISABLED] Would have sent to {to_email}: {subject}")
         return False
@@ -29,7 +28,6 @@ def send_email(to_email: str, subject: str, body: str) -> bool:
 
 
 def email_template(title: str, code: str, message: str) -> str:
-    """Return a branded HTML email body."""
     return f"""
     <div style="font-family:'Segoe UI',sans-serif;max-width:480px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.1)">
       <div style="background:#c0392b;padding:28px 32px">
@@ -52,14 +50,12 @@ def email_template(title: str, code: str, message: str) -> str:
 
 
 def generate_code() -> str:
-    """Return a random 6-digit numeric code."""
     return "".join(random.choices(string.digits, k=6))
 
 
 def store_code(db, user_id, email: str, code: str, code_type: str,
                pending_name: str = None, pending_role: str = None,
                pending_password: str = None, pending_user_id: str = None):
-    """Persist a fresh verification code (replaces any existing one of the same type)."""
     expires = (datetime.now() + timedelta(minutes=10)).strftime("%Y-%m-%d %H:%M:%S")
     db.execute(
         "DELETE FROM verification_codes WHERE email=? AND type=?",
